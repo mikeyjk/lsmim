@@ -11,13 +11,10 @@
 #define MAXBUF CHAR_MAX // maximum size of a char
 
 /**
- * ICT310
- * Assignment 1 - Question 6
- * 'myls'
+ * 'lsmim' -> 'ls mimic' -> 'mimics ls poorly'
  * Date: 09/09/13
+ *
  * Author: Michael J. Kiernan
- * Student Number: 31008429
- * 
  * */
 
 const char *defaultPath = "./"; // default directory -> current working directory
@@ -34,12 +31,74 @@ int containsSlash(char * check); // checks if a char* contains a '/' in it at al
 void storeDirectory(char * string, char  * directory, size_t size); // formats a string so it points to the directory correctly
 void storeFile(char* string, char* directory, size_t size); // formats a string so it points to the directory and the file correctly
 void regularFile(mode_t *file); // prints d if a directory or - if a file
-int isDirByName(char * file); // returns 1 if a directory 0 if not
-
+int isDirByName(char* file); // returns 1 if a directory 0 if not
+void expandedLS(char* file);
+void simpleLS(char* file);
 void printSeperator(); // print " | "
 void printNewLine(); // print "\n"
 void printSpace(); // print ' '
 void printPipe(); // print "|"
+int isS();
+void help();
+int countSubDir(char* file);
+
+/**
+* Checks for cmd line arguments.
+* If there is one and it is -s or -S it prints the default directory in the simplified format.
+* If there is 2 and the second is -s or -S it prints the supplied directory in the simplified format.
+* If there is one it prints the requested format from q6 using the supplied directory.
+*/
+int main(int argc, char ** argv)
+{
+	switch(argc)
+	{
+
+		case(1): // default cmd line args
+
+			expandedLS((char*)defaultPath);
+
+			break;
+
+		case(2): // 1 command line arg
+
+			if(isS(argv[1])) // if argument 1 is -s or -S
+			{
+				// presents simple 'ls' format, a bit like ls but stripped down, for debugging/testing success accessing dirs and files
+				simpleLS((char*)defaultPath);
+			}
+			else // else file or directory
+			{
+				expandedLS(argv[1]);
+			}
+ 
+			break;
+
+		case(3): // 2 command line args
+
+			if(isS(argv[2])) // 2nd argument is option 
+			{
+				simpleLS(argv[1]);
+			}
+			else if(isS(argv[1])) // 1st argument is option
+			{
+				simpleLS(argv[2]); 
+			}
+			else
+			{
+				help(); // expected either 1st or 2nd argument is option
+			}
+			break;
+
+		default:
+	
+			help();
+			break;
+	
+	}
+
+	return(0);
+}
+
 
 /**
 * Mimics the ls output of -ls -a -l
@@ -63,8 +122,6 @@ void simpleLS(char* location)
 	int pwd = -1;  // index of parent directory in fileNames[]
 	int files = 0; // counter for printing information
 	
-	int deb = 0;
-
 	userPath = malloc(MAXBUF * sizeof(char *)); // set aside memory for path name
 	fileNames = malloc(2 * (MAXBUF * sizeof(char *))); // set aside memory for file names, ** so multiplied by two
 
@@ -207,39 +264,25 @@ void expandedLS(char* location)
 }
 
 /**
-* Checks for cmd line arguments.
-* If there is one and it is -s or -S it prints the default directory in the simplified format.
-* If there is 2 and the second is -s or -S it prints the supplied directory in the simplified format.
-* If there is one it prints the requested format from q6 using the supplied directory.
+  * Checks string and returns 1 if it is 's' or 'S'.
 */
-int main(int argc, char ** argv)
+int isS(char* argv)
 {
-	if(argc > 1)  // command line arguments provided
-	{	
-		if( (strcmp(argv[1], "-s") == 0) || (strcmp(argv[1], "-S") == 0) ) // presents simple 'ls' format, a bit like ls but stripped down, for debugging/testing success accessing dirs and files
-		{
-			simpleLS((char*)defaultPath);
-		}
-		else
-		{
-			if(argv[2] != NULL)
-			{ 
-				if( (strcmp(argv[2], "-s") == 0) || (strcmp(argv[2], "-S") == 0) ) // directory provided and simple format requested
-				{
-					simpleLS(argv[1]);
-				}
-			}
-			else
-			{
-				expandedLS(argv[1]); // meets the requirements of q6
-			}
-		}
-	}
-	else 
-	{
-		expandedLS((char*)defaultPath);
-	}
-	return(0);
+	int isS = 0;
+
+	if( (strcmp(argv, "-s") == 0) || (strcmp(argv, "-S") == 0) )
+		isS = 1;
+
+	return(isS);
+}
+
+/**
+  * Print expected format.
+*/
+void help()
+{
+	printf("\nExpected format: 'lsmim [OPTION] [FILE]' or 'lsmim [FILE] [OPTION]'.");
+	printf("\nOptions: -s or -S for equivalent of 'ls -al'.");
 }
 
 /**
@@ -255,7 +298,6 @@ void printTime(time_t* amcTime)
 	char buffer[MAXBUF]; // used to format the date string
 	
 	struct tm * timeinfo; // used to store formatted date string
-	time_t tempTime = 0;
 	
 	// access date, modification date, status date
 	
@@ -278,13 +320,8 @@ void printSimpleInformation(char * file)
 {
 	char * tempString = malloc(MAXBUF * sizeof(char *));
 	
-	DIR *subd; // file descriptor pointer
-
 	int error = 0; // 1 = error
-	int fileCount = 0; // amount of files
 
-	struct dirent *subdir; // struct to fill with i-node number and name etc
-	
 	struct stat fileInfo; // information about a file
 	
 	struct passwd *user_name; // user id struct
@@ -339,13 +376,8 @@ void printFileInformation(char * file)
 {
 	char * tempString = malloc(MAXBUF * sizeof(char *));
 	
-	DIR *subd; // file descriptor pointer
-
 	int error = 0; // 1 = error
-	int fileCount = 0; // amount of files
 
-	struct dirent *subdir; // struct to fill with i-node number and name etc
-	
 	struct stat fileInfo; // information about a file
 	
 	struct group *grp; // group struct
@@ -355,8 +387,6 @@ void printFileInformation(char * file)
 	
 	if(error == 0)  // filled stat structure successfully
 	{
-
-
 		printNewLine();
 		printPipe();
 		printSpace();
@@ -389,7 +419,6 @@ void printFileInformation(char * file)
 		
 		printSeperator(); printNewLine(); printPipe(); printSpace();
 		
-		
 		printf("DeviceNum: %lld, %lld", (long long)(major(fileInfo.st_rdev)), (long long)(major(fileInfo.st_rdev)));
 		
 		printSeperator();
@@ -416,25 +445,7 @@ void printFileInformation(char * file)
 		
 		printNewLine();
 
-		if(isDirByName(file)) // if the file is a directory
-		{ 
-			subd = opendir(file);
-			
-			if(subd != NULL) // I thought the while would have caught this, but it doesn't! and I was segfaulting on root directory
-			{
-				while((subdir = readdir(subd)) != NULL) 
-				{
-					printf("---->");; printSpace();
-					printf("%d: inode: %d - name: %s\n", fileCount + 1, (int)subdir->d_ino, subdir->d_name);
-					fileCount++;
-				}
-			}
-
-			closedir(subd);
-			printf("| (dir containing %d files) |", fileCount);
-			printNewLine();
-		}
-
+		countSubDir(file);
 	}
 	else
 		printf("\nInvalid directory. Eg; '../', '.', 'test/'.");
@@ -442,6 +453,42 @@ void printFileInformation(char * file)
 	free(tempString);
 
 	return;
+}
+
+/**
+ * Receive a string with a directory.
+ * Iterates through the directory and prints the inode and name of the files in it.
+ * Returns the amount of files underneath this file.
+*/
+int countSubDir(char* file)
+{
+	DIR* subd = NULL; // file descriptor pointer
+	int fileCount = 0; // count of files in the directory
+	
+	struct dirent* subdir = NULL; // struct to fill with inode number and name
+	
+	if(isDirByName(file)) // if the file is a directory
+	{ 
+		subd = opendir(file); // get file descriptor
+		
+		if(subd != NULL) // I thought the while would have caught this, but it doesn't! and I was segfaulting on root directory
+		{
+			while((subdir = readdir(subd)) != NULL) 
+			{
+				printf("---->");; printSpace();
+				printf("%d: inode: %d - name: %s\n", fileCount + 1, (int)subdir->d_ino, subdir->d_name);
+				fileCount++;
+			}
+		}
+
+		closedir(subd);
+
+		printf("| (dir containing %d files) |", fileCount);
+
+		printNewLine();
+	}
+
+	return(fileCount);
 }
 
 /**
