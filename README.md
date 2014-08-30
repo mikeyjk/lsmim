@@ -5,6 +5,10 @@ I want to completely re-write this to be ridiculously modular.
 Debug programs to print out specific structs?
 Going to use ccan/failtest as a dependency.
 
+to do: 
+- break program into smaller chunks
+- create unit test for use with failtest
+
  Small C program that imitates 'ls' from GNU Core Utilities.
 
 Takes 1 directory over cli or the current working directory is assumed.
