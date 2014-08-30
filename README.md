@@ -1,6 +1,10 @@
 lsmim
 =====
 
+I want to completely re-write this to be ridiculously modular.
+Debug programs to print out specific structs?
+Going to use ccan/failtest as a dependency.
+
  Small C program that imitates 'ls' from GNU Core Utilities.
 
 Takes 1 directory over cli or the current working directory is assumed.
