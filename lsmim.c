@@ -15,6 +15,10 @@
  * Date: 09/09/13
  *
  * Author: Michael J. Kiernan
+ * 
+ * Actual 'ls':
+ *  http://git.savannah.gnu.org/cgit/coreutils.git/tree/src/ls.c
+ * 
  * */
 
 const char *defaultPath = "./"; // default directory -> current working directory
