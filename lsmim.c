@@ -5,23 +5,12 @@
 #include <sys/stat.h> // defines ST_MODE file permissions
 #include <time.h> // I nearly lost my mind over a seg fault issue, for some reason, if you use ctime() it compiles even without this header but just segs
 #include <pwd.h> // used to retrieve the user and group name - using st_uid and st_guid from the struct stat
-#include <grp.h> // used to store information about a group 
+#include <grp.h> // used to store information about a group
 #include <limits.h> // used to allocate memory for char* arrays
-
-#define MAXBUF CHAR_MAX // maximum size of a char
-
-#define MINORBITS        20
-#define MINORMASK        ((1U << MINORBITS) - 1)
-
-#define MAJOR(dev)        ((unsigned int) ((dev) >> MINORBITS))
-#define MINOR(dev)        ((unsigned int) ((dev) & MINORMASK))
-#define MKDEV(ma,mi)      (((ma) << MINORBITS) | (mi))
+#include <sys/sysmacros.h>
 
 /**
  * 'lsmim' -> 'ls mimic' -> 'mimics ls poorly'
- * Date: 09/09/13
- *
- * Author: Michael J. Kiernan
  * 
  * Actual 'ls':
  *  http://git.savannah.gnu.org/cgit/coreutils.git/tree/src/ls.c
@@ -133,10 +122,10 @@ void simpleLS(char* location)
 	int pwd = -1;  // index of parent directory in fileNames[]
 	int files = 0; // counter for printing information
 	
-	userPath = malloc(MAXBUF * sizeof(char *)); // set aside memory for path name
-	fileNames = malloc(2 * (MAXBUF * sizeof(char *))); // set aside memory for file names, ** so multiplied by two
+	userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
+	fileNames = malloc(2 * (CHAR_MAX * sizeof(char *))); // set aside memory for file names, ** so multiplied by two
 
-	storeDirectory(userPath, location, (size_t)(MAXBUF * sizeof(char *))); // append a '/' if necessary
+	storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' if necessary
 		
 	d = opendir(userPath); // open file stream
 
@@ -144,7 +133,7 @@ void simpleLS(char* location)
 	{ 
 		while((dir = readdir(d))) // while there is another file pointer to be passed on
 		{
-			fileNames[files] = malloc(MAXBUF * sizeof(char)); // set aside memory for file name pointer
+			fileNames[files] = malloc(CHAR_MAX * sizeof(char)); // set aside memory for file name pointer
 
 			if(strcmp(dir->d_name, ".") == 0) // check for file "." / current working directory, this is done to mimic the ls output
 			{
@@ -167,9 +156,9 @@ void simpleLS(char* location)
 		// print '.' and '..' first
 		if(cwd != -1) // '.'
 		{
-			filePath = (char*) calloc(MAXBUF, sizeof(char *)); // set aside memory for path name, clearing the memory also
+			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
 			
-			strncpy(filePath, userPath, (MAXBUF * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
 
 			strcat(filePath, fileNames[cwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
 			
@@ -184,9 +173,9 @@ void simpleLS(char* location)
 		
 		if(pwd != -1) // '..'
 		{
-			filePath = (char*) calloc(MAXBUF, sizeof(char *)); // set aside memory for path name, clearing the memory also
+			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
 			
-			strncpy(filePath, userPath, (MAXBUF * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
 			
 			strcat(filePath, fileNames[pwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
 
@@ -202,9 +191,9 @@ void simpleLS(char* location)
 		{
 			if(i != cwd && i != pwd) // so long as it is not the cwd or pwd as we have printed them all ready
 			{
-				filePath = (char*) calloc(MAXBUF, sizeof(char *)); // set aside memory for path name, clearing the memory also
+				filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
 			
-				strncpy(filePath, userPath, (MAXBUF * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+				strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
 			
 				strcat(filePath, fileNames[i]); // append the filename to the path name "./" + "test.c" = "./test.c"
 
@@ -239,9 +228,9 @@ void expandedLS(char* location)
 	char *userPath; // temporary string that will get filled with the path name
 	char *filePath; // combination of the user supplied path and the filename
 
-	userPath = malloc(MAXBUF * sizeof(char *)); // set aside memory for path name
+	userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
 
-	storeDirectory(userPath, location, (size_t)(MAXBUF * sizeof(char *))); // append a '/' to the path name so opendir can find it
+	storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' to the path name so opendir can find it
 		
 	d = opendir(userPath); // open file stream
 
@@ -249,9 +238,9 @@ void expandedLS(char* location)
 	{ 
 		while((dir = readdir(d))) // while there is another file pointer to be passed on
 		{
-			filePath = (char*) calloc(MAXBUF, sizeof(char *)); // set aside memory for path name, clearing the memory also
+			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
 			
-			strncpy(filePath, userPath, (MAXBUF * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
 			
 			strcat(filePath, dir->d_name); // append the filename to the path name "./" + "test.c" = "./test.c"
 			
@@ -306,7 +295,7 @@ void printTime(time_t* amcTime)
 {
 	// used to output the time/format the time
 	
-	char buffer[MAXBUF]; // used to format the date string
+	char buffer[CHAR_MAX]; // used to format the date string
 	
 	struct tm * timeinfo; // used to store formatted date string
 	
@@ -329,7 +318,7 @@ void printNewLine()
  * */
 void printSimpleInformation(char * file)
 {
-	char * tempString = malloc(MAXBUF * sizeof(char *));
+	char * tempString = malloc(CHAR_MAX * sizeof(char *));
 	
 	int error = 0; // 1 = error
 
@@ -385,7 +374,7 @@ void printSimpleInformation(char * file)
  * */
 void printFileInformation(char * file)
 {
-	char * tempString = malloc(MAXBUF * sizeof(char *));
+	char * tempString = malloc(CHAR_MAX * sizeof(char *));
 	
 	int error = 0; // 1 = error
 
@@ -424,13 +413,13 @@ void printFileInformation(char * file)
 
 		printSeperator();
 
-		printf("FSDevice: %lld, %lld", (long long)(MAJOR(fileInfo.st_dev)), (long long)(MAJOR(fileInfo.st_dev)));
+		printf("FSDevice: %lld, %lld", (long long)(major(fileInfo.st_dev)), (long long)(major(fileInfo.st_dev)));
 		printSeperator();
 		printf("Inode: %ld", (long)fileInfo.st_ino);
 		
 		printSeperator(); printNewLine(); printPipe(); printSpace();
 		
-		printf("DeviceNum: %lld, %lld", (long long)(MAJOR(fileInfo.st_rdev)), (long long)(MAJOR(fileInfo.st_rdev)));
+		printf("DeviceNum: %lld, %lld", (long long)(major(fileInfo.st_rdev)), (long long)(major(fileInfo.st_rdev)));
 		
 		printSeperator();
 		
