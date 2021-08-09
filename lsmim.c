@@ -10,6 +10,13 @@
 
 #define MAXBUF CHAR_MAX // maximum size of a char
 
+#define MINORBITS        20
+#define MINORMASK        ((1U << MINORBITS) - 1)
+
+#define MAJOR(dev)        ((unsigned int) ((dev) >> MINORBITS))
+#define MINOR(dev)        ((unsigned int) ((dev) & MINORMASK))
+#define MKDEV(ma,mi)      (((ma) << MINORBITS) | (mi))
+
 /**
  * 'lsmim' -> 'ls mimic' -> 'mimics ls poorly'
  * Date: 09/09/13
@@ -417,13 +424,13 @@ void printFileInformation(char * file)
 
 		printSeperator();
 
-		printf("FSDevice: %lld, %lld", (long long)(major(fileInfo.st_dev)), (long long)(major(fileInfo.st_dev)));
+		printf("FSDevice: %lld, %lld", (long long)(MAJOR(fileInfo.st_dev)), (long long)(MAJOR(fileInfo.st_dev)));
 		printSeperator();
 		printf("Inode: %ld", (long)fileInfo.st_ino);
 		
 		printSeperator(); printNewLine(); printPipe(); printSpace();
 		
-		printf("DeviceNum: %lld, %lld", (long long)(major(fileInfo.st_rdev)), (long long)(major(fileInfo.st_rdev)));
+		printf("DeviceNum: %lld, %lld", (long long)(MAJOR(fileInfo.st_rdev)), (long long)(MAJOR(fileInfo.st_rdev)));
 		
 		printSeperator();
 		
