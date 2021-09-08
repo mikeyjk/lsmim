@@ -47,7 +47,7 @@ int countSubDir(char* file);
  * If there is 2 and the second is -s or -S it prints the supplied directory in the simplified format.
  * If there is one it prints the requested format from q6 using the supplied directory.
  */
-int smain(int argc, char ** argv)
+int main(int argc, char ** argv)
 {
     switch(argc)
     {

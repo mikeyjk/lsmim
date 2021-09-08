@@ -1,15 +1,17 @@
 CC=gcc
 CFLAGS=-Wall -Werror -g
+OUT_DIR=bin
 APP_NAME=lsmim
-
-runTests: lsmimTest lsmim
-	echo "running tests\n";
-	./$(APP_NAME)Test
-
-lsmimTest:
-	echo "building tests\n";
-	$(CC) $(CFLAGS) $(APP_NAME)Test.c -o $(APP_NAME)Test -lcriterion
+LIBS=criterion
 
 lsmim: runTests
-	echo "building app\n";
-	$(CC) $(CFLAGS) $(APP_NAME).c -o $(APP_NAME)
+	$(info    ----> building app)
+	$(CC) $(CFLAGS) $(APP_NAME).c -o $(OUT_DIR)/$(APP_NAME)
+
+runTests: lsmimTest
+	$(info    ----> running tests)
+	./$(OUT_DIR)/$(APP_NAME)Test
+
+lsmimTest:
+	$(info		----> building tests)
+	$(CC) $(CFLAGS) $(APP_NAME)Test.c -o $(OUT_DIR)/$(APP_NAME)Test -l$(LIBS)
