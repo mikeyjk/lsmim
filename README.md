@@ -14,6 +14,8 @@ to do:
 - break program into smaller chunks
 - create unit test for use with failtest
 
+---
+
 Finally added some unit testing, using the 'criterion' library
 
 https://github.com/Snaipe/Criterion
