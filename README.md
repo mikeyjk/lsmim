@@ -8,8 +8,17 @@ Takes 1 directory over cli or the current working directory is assumed.
 
 It is fairly verbose without -s, so as to meet the requirements of an ICT310 project.
 
-to do: 
+to do:
 - break program into smaller chunks
 - create unit test for use with failtest
 
-TODO: It'd be good to use the CSPAN C testing library to test for memory leaks etc. Saw an interesting presentation from Rusty at Linux Conference 2014 regarding this library.
+Finally added some unit testing, using the 'criterion' library
+
+https://github.com/Snaipe/Criterion
+
+Notes for criterion on debian, currently not supported via apt, so instead:
+- download the latest release
+- bzip2 -d *
+- tar -xvf *
+- preserve symlinks/copy criterion/lib into /usr/lib
+- copy criterion/include/criterion to /usr/include

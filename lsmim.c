@@ -8,13 +8,12 @@
 #include <grp.h> // used to store information about a group
 #include <limits.h> // used to allocate memory for char* arrays
 #include <sys/sysmacros.h>
-
 /**
  * 'lsmim' -> 'ls mimic' -> 'mimics ls poorly'
- * 
+ *
  * Actual 'ls':
  *  http://git.savannah.gnu.org/cgit/coreutils.git/tree/src/ls.c
- * 
+ *
  * */
 
 const char *defaultPath = "./"; // default directory -> current working directory
@@ -43,274 +42,269 @@ void help();
 int countSubDir(char* file);
 
 /**
-* Checks for cmd line arguments.
-* If there is one and it is -s or -S it prints the default directory in the simplified format.
-* If there is 2 and the second is -s or -S it prints the supplied directory in the simplified format.
-* If there is one it prints the requested format from q6 using the supplied directory.
-*/
-int main(int argc, char ** argv)
+ * Checks for cmd line arguments.
+ * If there is one and it is -s or -S it prints the default directory in the simplified format.
+ * If there is 2 and the second is -s or -S it prints the supplied directory in the simplified format.
+ * If there is one it prints the requested format from q6 using the supplied directory.
+ */
+int smain(int argc, char ** argv)
 {
-	switch(argc)
-	{
+    switch(argc)
+    {
+        case(1): // default cmd line args
+            expandedLS((char*)defaultPath);
+            break;
+        case(2): // 1 command line arg
+            if(isS(argv[1])) // if argument 1 is -s or -S
+            {
+                // presents simple 'ls' format, a bit like ls but stripped down, for debugging/testing success accessing dirs and files
+                simpleLS((char*)defaultPath);
+            }
+            else // else file or directory
+            {
+                expandedLS(argv[1]);
+            }
 
-		case(1): // default cmd line args
+            break;
 
-			expandedLS((char*)defaultPath);
+        case(3): // 2 command line args
 
-			break;
+            if(isS(argv[2])) // 2nd argument is option
+            {
+                simpleLS(argv[1]);
+            }
+            else if(isS(argv[1])) // 1st argument is option
+            {
+                simpleLS(argv[2]);
+            }
+            else
+            {
+                help(); // expected either 1st or 2nd argument is option
+            }
+            break;
 
-		case(2): // 1 command line arg
+        default:
 
-			if(isS(argv[1])) // if argument 1 is -s or -S
-			{
-				// presents simple 'ls' format, a bit like ls but stripped down, for debugging/testing success accessing dirs and files
-				simpleLS((char*)defaultPath);
-			}
-			else // else file or directory
-			{
-				expandedLS(argv[1]);
-			}
- 
-			break;
+            help();
+            break;
 
-		case(3): // 2 command line args
+    }
 
-			if(isS(argv[2])) // 2nd argument is option 
-			{
-				simpleLS(argv[1]);
-			}
-			else if(isS(argv[1])) // 1st argument is option
-			{
-				simpleLS(argv[2]); 
-			}
-			else
-			{
-				help(); // expected either 1st or 2nd argument is option
-			}
-			break;
-
-		default:
-	
-			help();
-			break;
-	
-	}
-
-	return(0);
+    return(0);
 }
 
 
 /**
-* Mimics the ls output of -ls -a -l
-* I had the most annoying bug for soo long where the filenames were garbage.
-* I knew it was a GIGO error but it took me a while to realise I had to not only allocate memory for 
-* a char ** fileNames, but each pointer that fileNames points to. which makes sense now, but didn't then.
-*/
+ * Mimics the ls output of -ls -a -l
+ * I had the most annoying bug for soo long where the filenames were garbage.
+ * I knew it was a GIGO error but it took me a while to realise I had to not only allocate memory for
+ * a char ** fileNames, but each pointer that fileNames points to. which makes sense now, but didn't then.
+ */
 void simpleLS(char* location)
 {
-	DIR *d; // directory pointer
+    DIR *d; // directory pointer
 
-	struct dirent *dir; // file pointer
+    struct dirent *dir; // file pointer
 
-	char *userPath; // temporary string that will get filled with the path name
-	char *filePath; // combination of the user supplied path and the filename
-	
-	char** fileNames; // array of char*'s with file names, this is used so that the output order can be controlled to mimic ls
-	
-	int i = 0; // used to iterate through file names
-	int cwd = -1; // index of current working directory in fileNames[]
-	int pwd = -1;  // index of parent directory in fileNames[]
-	int files = 0; // counter for printing information
-	
-	userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
-	fileNames = malloc(2 * (CHAR_MAX * sizeof(char *))); // set aside memory for file names, ** so multiplied by two
+    char *userPath; // temporary string that will get filled with the path name
+    char *filePath; // combination of the user supplied path and the filename
 
-	storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' if necessary
-		
-	d = opendir(userPath); // open file stream
+    char** fileNames; // array of char*'s with file names, this is used so that the output order can be controlled to mimic ls
 
-	if(d) // if d is a valid pointer - aka a valid file location
-	{ 
-		while((dir = readdir(d))) // while there is another file pointer to be passed on
-		{
-			fileNames[files] = malloc(CHAR_MAX * sizeof(char)); // set aside memory for file name pointer
+    int i = 0; // used to iterate through file names
+    int cwd = -1; // index of current working directory in fileNames[]
+    int pwd = -1;  // index of parent directory in fileNames[]
+    int files = 0; // counter for printing information
 
-			if(strcmp(dir->d_name, ".") == 0) // check for file "." / current working directory, this is done to mimic the ls output
-			{
-				cwd = files;
-			}
+    userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
+    fileNames = malloc(2 * (CHAR_MAX * sizeof(char *))); // set aside memory for file names, ** so multiplied by two
 
-			if(strcmp(dir->d_name, "..") == 0) // check for file ".." / parent directory, this is done to mimic the ls output
-			{	
-				pwd = files;
-			}
-			
-			strcpy(fileNames[files], dir->d_name);
-			
-			files++;
-		}
-		
-		// total, not implemented successfully
-		printf("shallow total %d", files);
+    storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' if necessary
 
-		// print '.' and '..' first
-		if(cwd != -1) // '.'
-		{
-			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
-			
-			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+    d = opendir(userPath); // open file stream
 
-			strcat(filePath, fileNames[cwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
-			
-			printSimpleInformation(filePath);	
-			printSpace();
-			printf("%s", fileNames[cwd]);
-			
-			printSpace();
-			
-			free(filePath); // clear the path name because the file name gets appended to it
-		}
-		
-		if(pwd != -1) // '..'
-		{
-			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
-			
-			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
-			
-			strcat(filePath, fileNames[pwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
+    if(d) // if d is a valid pointer - aka a valid file location
+    {
+        while((dir = readdir(d))) // while there is another file pointer to be passed on
+        {
+            fileNames[files] = malloc(CHAR_MAX * sizeof(char)); // set aside memory for file name pointer
 
-			printSimpleInformation(filePath);
-			printSpace();
-			printf("%s", fileNames[pwd]);
-			
-			free(filePath); // clear the path name because the file name gets appended to it
-		}
-		
-		// ls is alphabetical but I can't really be bothered implementing this
-		for(i = 0; i < files; i++) // iterate through all files
-		{
-			if(i != cwd && i != pwd) // so long as it is not the cwd or pwd as we have printed them all ready
-			{
-				filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
-			
-				strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
-			
-				strcat(filePath, fileNames[i]); // append the filename to the path name "./" + "test.c" = "./test.c"
+            if(strcmp(dir->d_name, ".") == 0) // check for file "." / current working directory, this is done to mimic the ls output
+            {
+                cwd = files;
+            }
 
-				printSimpleInformation(filePath);
-				printSpace();
-				printf("%s", fileNames[i]);			
+            if(strcmp(dir->d_name, "..") == 0) // check for file ".." / parent directory, this is done to mimic the ls output
+            {
+                pwd = files;
+            }
 
-				free(filePath); // clear the path name because the file name gets appended to it
-			}
-		}
-	} 
-	else
-	{
-		printf("\nEither a file or invalid directory.\n");
-	}
-	
-	printNewLine();
-	
-	free(userPath);
-	free(fileNames);
-	
-	closedir(d); // close file stream
+            strcpy(fileNames[files], dir->d_name);
+
+            files++;
+        }
+
+        // total, not implemented successfully
+        printf("shallow total %d", files);
+
+        // print '.' and '..' first
+        if(cwd != -1) // '.'
+        {
+            filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
+
+            strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+
+            strcat(filePath, fileNames[cwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
+
+            printSimpleInformation(filePath);
+            printSpace();
+            printf("%s", fileNames[cwd]);
+
+            printSpace();
+
+            free(filePath); // clear the path name because the file name gets appended to it
+        }
+
+        if(pwd != -1) // '..'
+        {
+            filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
+
+            strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+
+            strcat(filePath, fileNames[pwd]); // append the filename to the path name "./" + "test.c" = "./test.c"
+
+            printSimpleInformation(filePath);
+            printSpace();
+            printf("%s", fileNames[pwd]);
+
+            free(filePath); // clear the path name because the file name gets appended to it
+        }
+
+        // ls is alphabetical but I can't really be bothered implementing this
+        for(i = 0; i < files; i++) // iterate through all files
+        {
+            if(i != cwd && i != pwd) // so long as it is not the cwd or pwd as we have printed them all ready
+            {
+                filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
+
+                strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+
+                strcat(filePath, fileNames[i]); // append the filename to the path name "./" + "test.c" = "./test.c"
+
+                printSimpleInformation(filePath);
+                printSpace();
+                printf("%s", fileNames[i]);   
+
+                free(filePath); // clear the path name because the file name gets appended to it
+            }
+        }
+    }
+    else
+    {
+        printf("\nEither a file or invalid directory.\n");
+    }
+
+    printNewLine();
+
+    free(userPath);
+    free(fileNames);
+
+    closedir(d); // close file stream
 }
 
 // q6 answer
 void expandedLS(char* location)
 {
-	DIR *d; // directory pointer
+    DIR *d; // directory pointer
 
-	struct dirent *dir; // file pointer
+    struct dirent *dir; // file pointer
 
-	char *userPath; // temporary string that will get filled with the path name
-	char *filePath; // combination of the user supplied path and the filename
+    char *userPath; // temporary string that will get filled with the path name
+    char *filePath; // combination of the user supplied path and the filename
 
-	userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
+    userPath = malloc(CHAR_MAX * sizeof(char *)); // set aside memory for path name
 
-	storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' to the path name so opendir can find it
-		
-	d = opendir(userPath); // open file stream
+    storeDirectory(userPath, location, (size_t)(CHAR_MAX * sizeof(char *))); // append a '/' to the path name so opendir can find it
 
-	if(d) // if d is a valid pointer - aka a valid file location
-	{ 
-		while((dir = readdir(d))) // while there is another file pointer to be passed on
-		{
-			filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
-			
-			strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
-			
-			strcat(filePath, dir->d_name); // append the filename to the path name "./" + "test.c" = "./test.c"
-			
-			printNewLine(); printPipe(); printSpace();
-			
-			printf("%s", dir->d_name); // do this here as opposed to printFileInformation so it doesn't include path like ls
-			
-			printSeperator();
-			
-			printFileInformation(filePath); // print info about the file
-			
-			free(filePath); // clear the path name because the file name gets appended to it
-		}
-	} 
-	else
-	{
-		printf("\nEither a file or invalid directory.\n");
-	}
-	
-	closedir(d); // close file stream
+    d = opendir(userPath); // open file stream
+
+    if(d) // if d is a valid pointer - aka a valid file location
+    {
+        while((dir = readdir(d))) // while there is another file pointer to be passed on
+        {
+            filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
+
+            strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
+
+            strcat(filePath, dir->d_name); // append the filename to the path name "./" + "test.c" = "./test.c"
+
+            printNewLine(); printPipe(); printSpace();
+
+            printf("%s", dir->d_name); // do this here as opposed to printFileInformation so it doesn't include path like ls
+
+            printSeperator();
+
+            printFileInformation(filePath); // print info about the file
+
+            free(filePath); // clear the path name because the file name gets appended to it
+        }
+    }
+    else
+    {
+        printf("\nEither a file or invalid directory.\n");
+    }
+
+    closedir(d); // close file stream
 }
 
 /**
-  * Checks string and returns 1 if it is 's' or 'S'.
-*/
+ * Checks string and returns 1 if it is 's' or 'S'.
+ */
 int isS(char* argv)
 {
-	int isS = 0;
+    int isS = 0;
 
-	if( (strcmp(argv, "-s") == 0) || (strcmp(argv, "-S") == 0) )
-		isS = 1;
+    if( (strcmp(argv, "-s") == 0) || (strcmp(argv, "-S") == 0) )
+        isS = 1;
 
-	return(isS);
+    return(isS);
 }
 
 /**
-  * Print expected format.
-*/
+ * Print expected format.
+ */
 void help()
 {
-	printf("\nExpected format: 'lsmim [OPTION] [FILE]' or 'lsmim [FILE] [OPTION]'.");
-	printf("\nOptions: -s or -S for equivalent of 'ls -al'.");
+    printf("\nExpected format: 'lsmim [OPTION] [FILE]' or 'lsmim [FILE] [OPTION]'.");
+    printf("\nOptions: -s or -S for equivalent of 'ls -al'.");
 }
 
 /**
  * Prints out the time in 24 hour format.
  * Explicitly defined output using strftime.
  * Prints it out like: '14:45 - 01/01/13'.
- * 
+ *
  * */
 void printTime(time_t* amcTime)
 {
-	// used to output the time/format the time
-	
-	char buffer[CHAR_MAX]; // used to format the date string
-	
-	struct tm * timeinfo; // used to store formatted date string
-	
-	// access date, modification date, status date
-	
-	timeinfo = localtime(amcTime);
-		
-	strftime(buffer, 80, "%H:%M - %x", timeinfo);
-		
-	printf("%s", buffer);
+    // used to output the time/format the time
+
+    char buffer[CHAR_MAX]; // used to format the date string
+
+    struct tm * timeinfo; // used to store formatted date string
+
+    // access date, modification date, status date
+
+    timeinfo = localtime(amcTime);
+
+    strftime(buffer, 80, "%H:%M - %x", timeinfo);
+
+    printf("%s", buffer);
 }
 
 void printNewLine()
 {
-	printf("\n");
+    printf("\n");
 }
 
 /**
@@ -318,55 +312,55 @@ void printNewLine()
  * */
 void printSimpleInformation(char * file)
 {
-	char * tempString = malloc(CHAR_MAX * sizeof(char *));
-	
-	int error = 0; // 1 = error
+    char * tempString = malloc(CHAR_MAX * sizeof(char *));
 
-	struct stat fileInfo; // information about a file
-	
-	struct passwd *user_name; // user id struct
-	struct group *grp; // group struct
+    int error = 0; // 1 = error
 
-	error = lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
-	
-	if(error == 0)  // filled stat structure successfully
-	{
-		printNewLine();
+    struct stat fileInfo; // information about a file
 
-		regularFile(&fileInfo.st_mode);
-		printPermissions(&fileInfo.st_mode);	
+    struct passwd *user_name; // user id struct
+    struct group *grp; // group struct
 
-		printSpace();
-		printf("%d", (int)fileInfo.st_nlink);
+    error = lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
 
-		user_name = getpwuid(fileInfo.st_uid);
-		grp = getgrgid(fileInfo.st_gid);
-			
-		printSpace();
+    if(error == 0)  // filled stat structure successfully
+    {
+        printNewLine();
 
-		printf("%s", user_name->pw_name);
+        regularFile(&fileInfo.st_mode);
+        printPermissions(&fileInfo.st_mode);
 
-		printSpace();
+        printSpace();
+        printf("%d", (int)fileInfo.st_nlink);
 
-		printf("%s", grp->gr_name);
+        user_name = getpwuid(fileInfo.st_uid);
+        grp = getgrgid(fileInfo.st_gid);
 
-		printSpace();
+        printSpace();
 
-		printf("%ld", (long)fileInfo.st_size);
+        printf("%s", user_name->pw_name);
 
-		printSpace();
+        printSpace();
 
-		printTime(&fileInfo.st_atime);
-				
-	}
-	else
-	{
-		printf("\nfile: %s", file);
-		printf("\nInvalid directory. Eg; '../', '.', 'test/'.");
-	}
-	free(tempString);
+        printf("%s", grp->gr_name);
 
-	return;
+        printSpace();
+
+        printf("%ld", (long)fileInfo.st_size);
+
+        printSpace();
+
+        printTime(&fileInfo.st_atime);
+
+    }
+    else
+    {
+        printf("\nfile: %s", file);
+        printf("\nInvalid directory. Eg; '../', '.', 'test/'.");
+    }
+    free(tempString);
+
+    return;
 }
 
 /**
@@ -374,132 +368,132 @@ void printSimpleInformation(char * file)
  * */
 void printFileInformation(char * file)
 {
-	char * tempString = malloc(CHAR_MAX * sizeof(char *));
-	
-	int error = 0; // 1 = error
+    char * tempString = malloc(CHAR_MAX * sizeof(char *));
 
-	struct stat fileInfo; // information about a file
-	
-	struct group *grp; // group struct
-	struct passwd *user_name; // user id struct
+    int error = 0; // 1 = error
 
-	error = lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
-	
-	if(error == 0)  // filled stat structure successfully
-	{
-		printNewLine();
-		printPipe();
-		printSpace();
-		regularFile(&fileInfo.st_mode);
-		printPermissions(&fileInfo.st_mode);	
+    struct stat fileInfo; // information about a file
 
-		printSeperator();
-		printf("%d", (int)fileInfo.st_nlink);
+    struct group *grp; // group struct
+    struct passwd *user_name; // user id struct
 
-		user_name = getpwuid(fileInfo.st_uid);
-		grp = getgrgid(fileInfo.st_gid);
-			
-		printSeperator();
+    error = lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
 
-		printf("%s", user_name->pw_name);
+    if(error == 0)  // filled stat structure successfully
+    {
+        printNewLine();
+        printPipe();
+        printSpace();
+        regularFile(&fileInfo.st_mode);
+        printPermissions(&fileInfo.st_mode);
 
-		printSeperator();
+        printSeperator();
+        printf("%d", (int)fileInfo.st_nlink);
 
-		printf("%s", grp->gr_name);
+        user_name = getpwuid(fileInfo.st_uid);
+        grp = getgrgid(fileInfo.st_gid);
 
-		printSeperator();
+        printSeperator();
 
-		printf("Size: %ld", (long)fileInfo.st_size);
+        printf("%s", user_name->pw_name);
 
-		printSeperator();
+        printSeperator();
 
-		printf("FSDevice: %lld, %lld", (long long)(major(fileInfo.st_dev)), (long long)(major(fileInfo.st_dev)));
-		printSeperator();
-		printf("Inode: %ld", (long)fileInfo.st_ino);
-		
-		printSeperator(); printNewLine(); printPipe(); printSpace();
-		
-		printf("DeviceNum: %lld, %lld", (long long)(major(fileInfo.st_rdev)), (long long)(major(fileInfo.st_rdev)));
-		
-		printSeperator();
-		
-		printf("BS: %ld", (long)fileInfo.st_blksize);
-		
-		printSeperator();
-		
-		printf("512B: %ld", (long)fileInfo.st_blocks);
-		
-		printSeperator();
-		printf("Access: ");
-		printTime(&fileInfo.st_atime);
-		
-		printSeperator();				
-		printf("Modified: ");
-		printTime(&fileInfo.st_mtime);
-		
-		printSeperator();
-		printf("Status: ");
-		printTime(&fileInfo.st_ctime);	
-		
-		printSeperator();
-		
-		printNewLine();
+        printf("%s", grp->gr_name);
 
-		countSubDir(file);
-	}
-	else
-		printf("\nInvalid directory. Eg; '../', '.', 'test/'.");
-		
-	free(tempString);
+        printSeperator();
 
-	return;
+        printf("Size: %ld", (long)fileInfo.st_size);
+
+        printSeperator();
+
+        printf("FSDevice: %lld, %lld", (long long)(major(fileInfo.st_dev)), (long long)(major(fileInfo.st_dev)));
+        printSeperator();
+        printf("Inode: %ld", (long)fileInfo.st_ino);
+
+        printSeperator(); printNewLine(); printPipe(); printSpace();
+
+        printf("DeviceNum: %lld, %lld", (long long)(major(fileInfo.st_rdev)), (long long)(major(fileInfo.st_rdev)));
+
+        printSeperator();
+
+        printf("BS: %ld", (long)fileInfo.st_blksize);
+
+        printSeperator();
+
+        printf("512B: %ld", (long)fileInfo.st_blocks);
+
+        printSeperator();
+        printf("Access: ");
+        printTime(&fileInfo.st_atime);
+
+        printSeperator();     
+        printf("Modified: ");
+        printTime(&fileInfo.st_mtime);
+
+        printSeperator();
+        printf("Status: ");
+        printTime(&fileInfo.st_ctime);
+
+        printSeperator();
+
+        printNewLine();
+
+        countSubDir(file);
+    }
+    else
+        printf("\nInvalid directory. Eg; '../', '.', 'test/'.");
+
+    free(tempString);
+
+    return;
 }
 
 /**
  * Receive a string with a directory.
  * Iterates through the directory and prints the inode and name of the files in it.
  * Returns the amount of files underneath this file.
-*/
+ */
 int countSubDir(char* file)
 {
-	DIR* subd = NULL; // file descriptor pointer
-	int fileCount = 0; // count of files in the directory
-	
-	struct dirent* subdir = NULL; // struct to fill with inode number and name
-	
-	if(isDirByName(file)) // if the file is a directory
-	{ 
-		subd = opendir(file); // get file descriptor
-		
-		if(subd != NULL) // I thought the while would have caught this, but it doesn't! and I was segfaulting on root directory
-		{
-			while((subdir = readdir(subd)) != NULL) 
-			{
-				printf("---->");; printSpace();
-				printf("%d: inode: %d - name: %s\n", fileCount + 1, (int)subdir->d_ino, subdir->d_name);
-				fileCount++;
-			}
-		}
+    DIR* subd = NULL; // file descriptor pointer
+    int fileCount = 0; // count of files in the directory
 
-		closedir(subd);
+    struct dirent* subdir = NULL; // struct to fill with inode number and name
 
-		printf("| (dir containing %d files) |", fileCount);
+    if(isDirByName(file)) // if the file is a directory
+    {
+        subd = opendir(file); // get file descriptor
 
-		printNewLine();
-	}
+        if(subd != NULL) // I thought the while would have caught this, but it doesn't! and I was segfaulting on root directory
+        {
+            while((subdir = readdir(subd)) != NULL)
+            {
+                printf("---->");; printSpace();
+                printf("%d: inode: %d - name: %s\n", fileCount + 1, (int)subdir->d_ino, subdir->d_name);
+                fileCount++;
+            }
+        }
 
-	return(fileCount);
+        closedir(subd);
+
+        printf("| (dir containing %d files) |", fileCount);
+
+        printNewLine();
+    }
+
+    return(fileCount);
 }
 
 /**
-Calls sub-routines to print out the permissions.
-Eg; -rwxrwxrwx etc.
-*/
+  Calls sub-routines to print out the permissions.
+  Eg; -rwxrwxrwx etc.
+  */
 void printPermissions(mode_t *file)
 {
-	userPermission(file);
-	groupPermission(file);
-	otherPermission(file);
+    userPermission(file);
+    groupPermission(file);
+    otherPermission(file);
 }
 
 /**
@@ -508,18 +502,18 @@ void printPermissions(mode_t *file)
  * */
 int containsSlash(char * check)
 {
-	int found = 0;
-	int i = 0;
+    int found = 0;
+    int i = 0;
 
-	for(i = 0; i < strlen(check); i++) // for the length of the string, if a slash is detected return 1
-	{
-		if(!(strcmp(&check[i], slash)))
-			found = 1;
-	}
+    for(i = 0; i < strlen(check); i++) // for the length of the string, if a slash is detected return 1
+    {
+        if(!(strcmp(&check[i], slash)))
+            found = 1;
+    }
 
-	return(found); 
+    return(found);
 }
-	
+
 /**
  * Append a directory to a string.
  * Eg; "folder/" and wish to add another directory "folder2/" that is within folder.
@@ -529,15 +523,15 @@ int containsSlash(char * check)
  * */
 void storeDirectory(char* changed, char* directory, size_t size) // formats a string so it points to the directory correctly
 {
-	if(!containsSlash(changed)) // check if the pre existing directory contains a slash
-		strcat(changed, slash); // append a slash - this is required
-	
-	strncpy(changed, directory, size); // copy the user provided directory to tempString
+    if(!containsSlash(changed)) // check if the pre existing directory contains a slash
+        strcat(changed, slash); // append a slash - this is required
 
-	if(!containsSlash(directory)) // check if the directory all ready contains a slash
-		strcat(changed, slash); // append a slash - this is useful 
+    strncpy(changed, directory, size); // copy the user provided directory to tempString
 
-	return;
+    if(!containsSlash(directory)) // check if the directory all ready contains a slash
+        strcat(changed, slash); // append a slash - this is useful
+
+    return;
 }
 
 /**
@@ -548,149 +542,149 @@ void storeDirectory(char* changed, char* directory, size_t size) // formats a st
  * */
 void storeFile(char* changed, char* file, size_t size) // formats a string so it points to the directory correctly
 {
-	if(!containsSlash(changed)) // check if the pre existing directory contains a slash
-		strcat(changed, slash); // append a slash - this is required
-	
-	strncpy(changed, file, size); // copy the user provided directory to tempString
+    if(!containsSlash(changed)) // check if the pre existing directory contains a slash
+        strcat(changed, slash); // append a slash - this is required
 
-	return;
+    strncpy(changed, file, size); // copy the user provided directory to tempString
+
+    return;
 }
 
-/** 
-Prints out whether the file is considered a directory or a file.
-*/
+/**
+  Prints out whether the file is considered a directory or a file.
+  */
 void regularFile(mode_t *file)
 {
-	if(S_ISDIR(*file) != 0)
-		printf("d");
-	
-	if(S_ISLNK(*file) != 0)
-		printf("l");
-		
-	if(S_ISBLK(*file) != 0)
-		printf("b");
-	
-	if(S_ISFIFO(*file) != 0)
-		printf("p");
-	
-	if(S_ISCHR(*file) != 0)
-		printf("c");
-	
-	if(S_ISSOCK(*file) != 0)
-		printf("s");
-					
-	if(S_ISREG(*file) != 0)
-		printf("-");
+    if(S_ISDIR(*file) != 0)
+        printf("d");
 
-	return;
+    if(S_ISLNK(*file) != 0)
+        printf("l");
+
+    if(S_ISBLK(*file) != 0)
+        printf("b");
+
+    if(S_ISFIFO(*file) != 0)
+        printf("p");
+
+    if(S_ISCHR(*file) != 0)
+        printf("c");
+
+    if(S_ISSOCK(*file) != 0)
+        printf("s");
+
+    if(S_ISREG(*file) != 0)
+        printf("-");
+
+    return;
 }
 
 int isDirByName(char * file)
 {
-	int isDir = 0;
+    int isDir = 0;
 
-	struct stat fileInfo; // information about a file
+    struct stat fileInfo; // information about a file
 
-	lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
+    lstat(file, &fileInfo); // store data about a file (files[i]) in &fileInfo
 
-	if(fileInfo.st_mode & S_IFDIR)
-		isDir = 1;
+    if(fileInfo.st_mode & S_IFDIR)
+        isDir = 1;
 
-	return(isDir);
+    return(isDir);
 }
 
 int isDir(mode_t *file)
 {
-	int isDir = 0;
+    int isDir = 0;
 
-	if(*file & S_IFDIR)
-		isDir = 1;
-	else
-		isDir = 0;
+    if(*file & S_IFDIR)
+        isDir = 1;
+    else
+        isDir = 0;
 
-	return(isDir);
+    return(isDir);
 }
 
-/** 
-Prints out the permissions for user group 'user'.
-*/
+/**
+  Prints out the permissions for user group 'user'.
+  */
 void userPermission(mode_t *user)
 {
-	if(*user & S_IRUSR)
-		printf("r");
-	else
-		printf("-");
+    if(*user & S_IRUSR)
+        printf("r");
+    else
+        printf("-");
 
-	if(*user & S_IWUSR)	
-		printf("w");
-	else
-		printf("-");
+    if(*user & S_IWUSR)
+        printf("w");
+    else
+        printf("-");
 
-	if(*user & S_IXUSR) 
-		printf("x");
-	else
-		printf("-");
+    if(*user & S_IXUSR)
+        printf("x");
+    else
+        printf("-");
 
-	return;
+    return;
 }
 
-/** 
-Prints out the permissions for user group 'group'.
-*/
+/**
+  Prints out the permissions for user group 'group'.
+  */
 void groupPermission(mode_t *group)
 {
-	if(*group & S_IRGRP)
-		printf("r");
-	else
-		printf("-");
+    if(*group & S_IRGRP)
+        printf("r");
+    else
+        printf("-");
 
-	if(*group & S_IWGRP)
-		printf("w");
-	else
-		printf("-");
+    if(*group & S_IWGRP)
+        printf("w");
+    else
+        printf("-");
 
-	if(*group & S_IXGRP)
-		printf("x");
-	else
-		printf("-");
+    if(*group & S_IXGRP)
+        printf("x");
+    else
+        printf("-");
 
-	return;
+    return;
 }
 
-/** 
-Prints out the permissions for user group 'other'.
-*/
+/**
+  Prints out the permissions for user group 'other'.
+  */
 void otherPermission(mode_t *other)
 {
-	if(*other & S_IROTH)
-		printf("r");
-	else
-		printf("-");
+    if(*other & S_IROTH)
+        printf("r");
+    else
+        printf("-");
 
-	if(*other & S_IWOTH)
-		printf("w");	
-	else
-		printf("-");
+    if(*other & S_IWOTH)
+        printf("w");
+    else
+        printf("-");
 
-	if(*other & S_IXOTH)
-		printf("x");
-	else
-		printf("-");
+    if(*other & S_IXOTH)
+        printf("x");
+    else
+        printf("-");
 
-	return;
+    return;
 }
 
 void printSpace()
 {
-	printf(" ");
+    printf(" ");
 }
 
 void printPipe()
 {
-	printf("|");
+    printf("|");
 }
 
 void printSeperator()
 {
-	printf(" | ");
+    printf(" | ");
 }
