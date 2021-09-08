@@ -1,7 +1,9 @@
 lsmim
 =====
 
-Small C program that imitates 'ls' from GNU Core Utilities.
+clone of 'ls' from GNU Core Utilities.
+
+---
 
 Takes 1 directory over cli or the current working directory is assumed.
 1 flag option currently '-s' which provides a simplified listing format.
