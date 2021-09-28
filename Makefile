@@ -15,3 +15,7 @@ runTests: lsmimTest
 lsmimTest:
 	$(info		----> building tests)
 	$(CC) $(CFLAGS) $(APP_NAME)Test.c -o $(OUT_DIR)/$(APP_NAME)Test -l$(LIBS)
+
+clean:
+	rm $(OUT_DIR)/$(APP_NAME)Test
+	rm $(OUT_DIR)/$(APP_NAME)

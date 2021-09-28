@@ -103,6 +103,7 @@ int main(int argc, char ** argv)
 void simpleLS(char* location)
 {
     DIR *d; // directory pointer
+    FILE *f;
 
     struct dirent *dir; // file pointer
 
@@ -198,24 +199,27 @@ void simpleLS(char* location)
                 free(filePath); // clear the path name because the file name gets appended to it
             }
         }
+        closedir(d); // close file stream
+        free(fileNames);
     }
-    else
+    else if ((f = fopen(userPath, "r")))
     {
+            printSimpleInformation(userPath); // print info about the file
+            printf(" - %s", userPath);
+            fclose(f); // close file stream
+    } else {
         printf("\nEither a file or invalid directory.\n");
     }
 
-    printNewLine();
-
     free(userPath);
-    free(fileNames);
-
-    closedir(d); // close file stream
+    printNewLine();
 }
 
 // q6 answer
 void expandedLS(char* location)
 {
     DIR *d; // directory pointer
+    FILE *f;
 
     struct dirent *dir; // file pointer
 
@@ -228,33 +232,37 @@ void expandedLS(char* location)
 
     d = opendir(userPath); // open file stream
 
+    printf("%s", userPath);
+
     if(d) // if d is a valid pointer - aka a valid file location
     {
         while((dir = readdir(d))) // while there is another file pointer to be passed on
         {
             filePath = (char*) calloc(CHAR_MAX, sizeof(char *)); // set aside memory for path name, clearing the memory also
-
             strncpy(filePath, userPath, (CHAR_MAX * sizeof(char *))); // copy the path to filePath " " + "./" = "./"
-
             strcat(filePath, dir->d_name); // append the filename to the path name "./" + "test.c" = "./test.c"
-
-            printNewLine(); printPipe(); printSpace();
-
+            printNewLine(); 
+            printPipe(); 
+            printSpace();
             printf("%s", dir->d_name); // do this here as opposed to printFileInformation so it doesn't include path like ls
-
             printSeperator();
-
             printFileInformation(filePath); // print info about the file
-
             free(filePath); // clear the path name because the file name gets appended to it
         }
+        closedir(d); // close file stream
     }
-    else
+    else if ((f = fopen(userPath, "r")))
     {
+            printNewLine(); 
+            printPipe(); 
+            printSpace();
+            printf("%s", userPath);
+            printSeperator();
+            printFileInformation(userPath); // print info about the file
+            fclose(f); // close file stream
+    } else {
         printf("\nEither a file or invalid directory.\n");
     }
-
-    closedir(d); // close file stream
 }
 
 /**
@@ -528,8 +536,9 @@ void storeDirectory(char* changed, char* directory, size_t size) // formats a st
 
     strncpy(changed, directory, size); // copy the user provided directory to tempString
 
-    if(!containsSlash(directory)) // check if the directory all ready contains a slash
-        strcat(changed, slash); // append a slash - this is useful
+// why called twice
+    //if(!containsSlash(directory)) // check if the directory all ready contains a slash
+      //  strcat(changed, slash); // append a slash - this is useful
 
     return;
 }
