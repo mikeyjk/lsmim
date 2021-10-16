@@ -6,10 +6,6 @@ INCLUDE_PATH ?= criterion/include
 LIB_PATH ?= criterion/lib
 LIBS=criterion
 
-#lsmim:
-	#$(info    ----> building app)
-	#$(CC) $(CFLAGS) $(APP_NAME).c -o $(OUT_DIR)/$(APP_NAME)
-
 lsmim: runTests
 	$(info    ----> building app)
 	$(CC) $(CFLAGS) $(APP_NAME).c -o $(OUT_DIR)/$(APP_NAME)
